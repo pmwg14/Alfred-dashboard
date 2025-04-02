@@ -1,26 +1,33 @@
 import streamlit as st
 import random
+import pandas as pd
 from datetime import datetime
 
 st.set_page_config(layout="wide", page_title="Alfred Dashboard", page_icon="⚡")
 
 st.title("Alfred Dashboard – v1.0 (Prototype)")
 st.caption(f"{datetime.now().strftime('%A %d %B %Y, %H:%M:%S')}")
-st.markdown("**Location:** Approximate location via GPS module (planned)")
-
-st.divider()
 
 # --- REFRESH BUTTON ---
-if st.button("🔄 Refresh Mock Data"):
+if st.button("🔧 Refresh Mock Data"):
     st.session_state.clear()
     st.rerun()
 
-# --- INIT MOCK DATA ---
+# --- INIT SESSION STATE HELPERS ---
 def init_mock(key, generator):
     if key not in st.session_state:
         st.session_state[key] = generator()
 
-# Power values
+# --- LOCATIONS ---
+locations = [
+    {"name": "Salcombe, Devon", "lat": 50.2370, "lon": -3.7766},
+    {"name": "Eller How House, Lake District", "lat": 54.3727, "lon": -2.9389},
+    {"name": "Ullswater, Lake District", "lat": 54.5870, "lon": -2.8534},
+    {"name": "Marymount, Raggleswood, Chislehurst", "lat": 51.4062, "lon": 0.0577},
+    {"name": "Stoke Mandeville", "lat": 51.7872, "lon": -0.7934},
+]
+
+# --- INIT MOCK VALUES ---
 init_mock("renogy_voltage", lambda: round(random.uniform(12.4, 13.2), 2))
 init_mock("renogy_soc", lambda: random.randint(70, 100))
 init_mock("solar_input", lambda: random.randint(0, 360))
@@ -30,15 +37,32 @@ init_mock("ecoflow_soc", lambda: random.randint(50, 90))
 init_mock("ecoflow_output", lambda: random.randint(100, 600))
 init_mock("ecoflow_input", lambda: random.randint(0, 240))
 
-# Connectivity
 init_mock("starlink_download", lambda: random.randint(80, 120))
 init_mock("starlink_upload", lambda: random.randint(10, 20))
 init_mock("wifi_devices", lambda: random.randint(4, 10))
 
-# Environment
 init_mock("interior_temp", lambda: round(random.uniform(18.5, 23.0), 1))
 init_mock("humidity", lambda: random.randint(35, 60))
 init_mock("water_level", lambda: random.randint(40, 80))
+
+init_mock("gps_location", lambda: random.choice(locations))
+
+# --- Starlink Speed History ---
+init_mock("starlink_history", lambda: pd.DataFrame(columns=["Download", "Upload"]))
+new_row = pd.DataFrame({
+    "Download": [st.session_state['starlink_download']],
+    "Upload": [st.session_state['starlink_upload']]
+})
+st.session_state['starlink_history'] = pd.concat([
+    st.session_state['starlink_history'], new_row
+]).tail(20)
+
+# --- LOCATION DISPLAY ---
+loc = st.session_state['gps_location']
+st.markdown(f"**Current GPS Location:** {loc['name']}")
+st.markdown(f"Lat: `{loc['lat']}`, Lon: `{loc['lon']}`")
+st.map(pd.DataFrame([{"lat": loc['lat'], "lon": loc['lon']}]), zoom=10)
+st.divider()
 
 # --- POWER SYSTEM SECTION ---
 col1, col2 = st.columns(2)
@@ -52,7 +76,7 @@ with col1:
 
 with col2:
     st.subheader("EcoFlow Delta Pro")
-    st.metric("Battery SOC", f"{st.session_state['ecoflow_soc']}%", help="EcoFlow battery state of charge")
+    st.metric("Battery SOC", f"{st.session_state['ecoflow_soc']}%", help="EcoFlow battery state of charge ")
     st.metric("AC Output", f"{st.session_state['ecoflow_output']}W", help="AC devices draw")
     st.metric("Input Power", f"{st.session_state['ecoflow_input']}W", help="Via solar or EV charging")
 
@@ -63,9 +87,11 @@ st.subheader("Connectivity")
 col3, col4 = st.columns(2)
 
 with col3:
-    st.metric("Starlink Status", "Online", help="Ping to satellite and WAN")
-    st.metric("Download Speed", f"{st.session_state['starlink_download']} Mbps", help="Polled via Starlink local API")
+    st.metric("Starlink Status 🛰️", "Online", help="Ping to satellite and WAN")
+    st.metric("Download Speed 🛜", f"{st.session_state['starlink_download']} Mbps", help="Polled via Starlink local API")
     st.metric("Upload Speed", f"{st.session_state['starlink_upload']} Mbps", help="Polled via Starlink local API")
+
+    st.line_chart(st.session_state['starlink_history'], height=150, use_container_width=True)
 
 with col4:
     st.metric("Devices on WiFi", st.session_state['wifi_devices'], help="Connected devices to local router")
@@ -77,10 +103,10 @@ st.subheader("Environmental Monitoring")
 col5, col6, col7 = st.columns(3)
 
 with col5:
-    st.metric("Interior Temp", f"{st.session_state['interior_temp']}°C", help="From BME280 sensor in van cabin")
+    st.metric("Interior Temp🌡️", f"{st.session_state['interior_temp']}°C", help="From BME280 sensor in van cabin")
 
 with col6:
-    st.metric("Humidity", f"{st.session_state['humidity']}%", help="From DHT22 or BME280 sensor")
+    st.metric("Humidity💦", f"{st.session_state['humidity']}%", help="From DHT22 or BME280 sensor")
 
 with col7:
     st.metric("Water Tank Level", f"{st.session_state['water_level']}%", help="From analogue tank sensor")
