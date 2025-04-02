@@ -95,9 +95,3 @@ st.markdown("---")
 # --- FOOTER ---
 st.markdown("##### Alfred is always watching over your off-grid adventures.")
 st.caption("v1.0.0 | Codename: ‘Dashboard Dawn’")
-
-git init
-git remote add origin https://github.com/your-username/alfred-dashboard.git
-git add .
-git commit -m "Initial prototype dashboard"
-git push -u origin main
