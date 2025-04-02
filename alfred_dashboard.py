@@ -13,7 +13,7 @@ st.divider()
 # --- REFRESH BUTTON ---
 if st.button("🔄 Refresh Mock Data"):
     st.session_state.clear()
-    st.experimental_rerun()
+    st.rerun()
 
 # --- INIT MOCK DATA ---
 def init_mock(key, generator):
