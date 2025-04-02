@@ -1,6 +1,10 @@
 # file: alfred_dashboard.py
 import streamlit as st
 from datetime import datetime
+import random
+
+st.experimental_set_query_params(refresh=str(datetime.now()))
+st.markdown('<meta http-equiv="refresh" content="5">', unsafe_allow_html=True)
 
 st.set_page_config(layout="wide", page_title="Alfred Dashboard", page_icon="⚡")
 
@@ -15,16 +19,16 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("Renogy 12V System")
-    st.metric(label="Battery Voltage", value="12.8V", help="Live data via Renogy One Core")
-    st.metric(label="Battery SOC", value="92%", help="State of charge from Renogy batteries")
-    st.metric(label="Solar Input", value="240W", help="MPPT controller solar wattage input")
-    st.metric(label="DC Load", value="45W", help="Total 12V system draw")
+    st.metric(label="Battery Voltage", value=f"{round(random.uniform(12.4, 13.2), 2)}V", help="Live data via Renogy One Core")
+st.metric(label="Battery SOC", value=f"{random.randint(70, 100)}%", help="State of charge from Renogy batteries")
+st.metric(label="Solar Input", value=f"{random.randint(0, 360)}W", help="MPPT controller solar wattage input")
+st.metric(label="DC Load", value=f"{random.randint(30, 80)}W", help="Total 12V system draw")
 
 with col2:
     st.subheader("EcoFlow Delta Pro")
-    st.metric(label="Battery SOC", value="76%", help="EcoFlow battery state of charge")
-    st.metric(label="AC Output", value="340W", help="AC devices draw")
-    st.metric(label="Input Power", value="120W", help="Via solar or EV charging")
+    st.metric(label="Battery SOC", value=f"{random.randint(50, 90)}%", help="EcoFlow battery state of charge")
+st.metric(label="AC Output", value=f"{random.randint(100, 600)}W", help="AC devices draw")
+st.metric(label="Input Power", value=f"{random.randint(0, 240)}W", help="Via solar or EV charging")
 
 st.markdown("---")
 
@@ -34,8 +38,8 @@ col3, col4 = st.columns(2)
 
 with col3:
     st.metric(label="Starlink Status", value="Online", help="Ping to satellite and WAN")
-    st.metric(label="Download Speed", value="98 Mbps", help="Polled via Starlink local API")
-    st.metric(label="Upload Speed", value="14 Mbps", help="Polled via Starlink local API")
+st.metric(label="Download Speed", value=f"{random.randint(80, 120)} Mbps", help="Polled via Starlink local API")
+st.metric(label="Upload Speed", value=f"{random.randint(10, 20)} Mbps", help="Polled via Starlink local API")
 
 with col4:
     st.metric(label="Devices on WiFi", value="7", help="Connected devices to local router")
