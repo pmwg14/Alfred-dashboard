@@ -3,10 +3,10 @@ import streamlit as st
 from datetime import datetime
 import random
 
-st.query.params(refresh=str(datetime.now()))
-st.markdown('<meta http-equiv="refresh" content="5">', unsafe_allow_html=True)
-
 st.set_page_config(layout="wide", page_title="Alfred Dashboard", page_icon="⚡")
+
+# Auto-refresh every 30 seconds (can adjust if needed)
+st.markdown('<meta http-equiv="refresh" content="30">', unsafe_allow_html=True)
 
 # --- HEADER ---
 st.markdown("## Alfred Dashboard – v1.0 (Prototype)")
