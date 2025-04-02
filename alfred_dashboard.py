@@ -1,65 +1,91 @@
-# file: alfred_dashboard.py
 import streamlit as st
-from datetime import datetime
 import random
+from datetime import datetime
 
 st.set_page_config(layout="wide", page_title="Alfred Dashboard", page_icon="⚡")
 
-# Auto-refresh every 5 seconds (can adjust if needed)
-st.markdown('<meta http-equiv="refresh" content="5">', unsafe_allow_html=True)
-
-# --- HEADER ---
-st.markdown("## Alfred Dashboard – v1.0 (Prototype)")
-st.markdown(f"**Date & Time:** {datetime.now().strftime('%A %d %B %Y, %H:%M:%S')}")
+st.title("Alfred Dashboard – v1.0 (Prototype)")
+st.caption(f"{datetime.now().strftime('%A %d %B %Y, %H:%M:%S')}")
 st.markdown("**Location:** Approximate location via GPS module (planned)")
-st.markdown("---")
+
+st.divider()
+
+# --- REFRESH BUTTON ---
+if st.button("🔄 Refresh Mock Data"):
+    st.session_state.clear()
+    st.experimental_rerun()
+
+# --- INIT MOCK DATA ---
+def init_mock(key, generator):
+    if key not in st.session_state:
+        st.session_state[key] = generator()
+
+# Power values
+init_mock("renogy_voltage", lambda: round(random.uniform(12.4, 13.2), 2))
+init_mock("renogy_soc", lambda: random.randint(70, 100))
+init_mock("solar_input", lambda: random.randint(0, 360))
+init_mock("dc_load", lambda: random.randint(30, 80))
+
+init_mock("ecoflow_soc", lambda: random.randint(50, 90))
+init_mock("ecoflow_output", lambda: random.randint(100, 600))
+init_mock("ecoflow_input", lambda: random.randint(0, 240))
+
+# Connectivity
+init_mock("starlink_download", lambda: random.randint(80, 120))
+init_mock("starlink_upload", lambda: random.randint(10, 20))
+init_mock("wifi_devices", lambda: random.randint(4, 10))
+
+# Environment
+init_mock("interior_temp", lambda: round(random.uniform(18.5, 23.0), 1))
+init_mock("humidity", lambda: random.randint(35, 60))
+init_mock("water_level", lambda: random.randint(40, 80))
 
 # --- POWER SYSTEM SECTION ---
 col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("Renogy 12V System")
-    st.metric(label="Battery Voltage", value=f"{round(random.uniform(12.4, 13.2), 2)}V", help="Live data via Renogy One Core")
-st.metric(label="Battery SOC", value=f"{random.randint(70, 100)}%", help="State of charge from Renogy batteries")
-st.metric(label="Solar Input", value=f"{random.randint(0, 360)}W", help="MPPT controller solar wattage input")
-st.metric(label="DC Load", value=f"{random.randint(30, 80)}W", help="Total 12V system draw")
+    st.metric("Battery Voltage", f"{st.session_state['renogy_voltage']}V", help="Live data via Renogy One Core")
+    st.metric("Battery SOC", f"{st.session_state['renogy_soc']}%", help="State of charge from Renogy batteries")
+    st.metric("Solar Input", f"{st.session_state['solar_input']}W", help="MPPT controller solar wattage input")
+    st.metric("DC Load", f"{st.session_state['dc_load']}W", help="Total 12V system draw")
 
 with col2:
     st.subheader("EcoFlow Delta Pro")
-    st.metric(label="Battery SOC", value=f"{random.randint(50, 90)}%", help="EcoFlow battery state of charge")
-st.metric(label="AC Output", value=f"{random.randint(100, 600)}W", help="AC devices draw")
-st.metric(label="Input Power", value=f"{random.randint(0, 240)}W", help="Via solar or EV charging")
+    st.metric("Battery SOC", f"{st.session_state['ecoflow_soc']}%", help="EcoFlow battery state of charge")
+    st.metric("AC Output", f"{st.session_state['ecoflow_output']}W", help="AC devices draw")
+    st.metric("Input Power", f"{st.session_state['ecoflow_input']}W", help="Via solar or EV charging")
 
-st.markdown("---")
+st.divider()
 
 # --- CONNECTIVITY SECTION ---
 st.subheader("Connectivity")
 col3, col4 = st.columns(2)
 
 with col3:
-    st.metric(label="Starlink Status", value="Online", help="Ping to satellite and WAN")
-st.metric(label="Download Speed", value=f"{random.randint(80, 120)} Mbps", help="Polled via Starlink local API")
-st.metric(label="Upload Speed", value=f"{random.randint(10, 20)} Mbps", help="Polled via Starlink local API")
+    st.metric("Starlink Status", "Online", help="Ping to satellite and WAN")
+    st.metric("Download Speed", f"{st.session_state['starlink_download']} Mbps", help="Polled via Starlink local API")
+    st.metric("Upload Speed", f"{st.session_state['starlink_upload']} Mbps", help="Polled via Starlink local API")
 
 with col4:
-    st.metric(label="Devices on WiFi", value="7", help="Connected devices to local router")
+    st.metric("Devices on WiFi", st.session_state['wifi_devices'], help="Connected devices to local router")
 
-st.markdown("---")
+st.divider()
 
 # --- ENVIRONMENT SECTION ---
 st.subheader("Environmental Monitoring")
 col5, col6, col7 = st.columns(3)
 
 with col5:
-    st.metric("Interior Temp", "21.6°C", help="From BME280 sensor in van cabin")
+    st.metric("Interior Temp", f"{st.session_state['interior_temp']}°C", help="From BME280 sensor in van cabin")
 
 with col6:
-    st.metric("Humidity", "48%", help="From DHT22 or BME280 sensor")
+    st.metric("Humidity", f"{st.session_state['humidity']}%", help="From DHT22 or BME280 sensor")
 
 with col7:
-    st.metric("Water Tank Level", "62%", help="From analogue tank sensor")
+    st.metric("Water Tank Level", f"{st.session_state['water_level']}%", help="From analogue tank sensor")
 
-st.markdown("---")
+st.divider()
 
 # --- CONTROL PANEL ---
 st.subheader("Lighting & Device Control")
@@ -82,7 +108,7 @@ with device_cols[2]:
 with device_cols[3]:
     st.button("Induction Hob", help="Toggle AC hob power relay")
 
-st.markdown("---")
+st.divider()
 
 # --- SCENE BUTTONS ---
 st.subheader("Scenes")
@@ -94,7 +120,7 @@ with scene_cols[1]:
 with scene_cols[2]:
     st.button("Stealth Mode", help="Disables all external lights & sound")
 
-st.markdown("---")
+st.divider()
 
 # --- FOOTER ---
 st.markdown("##### Alfred is always watching over your off-grid adventures.")
