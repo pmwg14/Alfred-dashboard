@@ -3,7 +3,7 @@ import streamlit as st
 from datetime import datetime
 import random
 
-st.experimental_set_query_params(refresh=str(datetime.now()))
+st.query.params(refresh=str(datetime.now()))
 st.markdown('<meta http-equiv="refresh" content="5">', unsafe_allow_html=True)
 
 st.set_page_config(layout="wide", page_title="Alfred Dashboard", page_icon="⚡")
