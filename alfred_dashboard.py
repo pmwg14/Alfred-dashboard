@@ -98,11 +98,11 @@ st.subheader("Device Controls (Prototype)")
 
 colA, colB, colC = st.columns(3)
 
-    with colA:
+with colA:
     light_on = st.button("Toggle Lights", help="This will eventually control 12V LED circuits via a Raspberry Pi relay.")
-    with colB:
+with colB:
     fan_on = st.button("Toggle Vent Fan", help="Will trigger an inline 12V fan connected via a smart switch or GPIO.")
-    with colC:
+with colC:
     heater_on = st.button("Toggle Diesel Heater", help="Will send signal to heater controller via GPIO or smart relay.")
 
 st.caption("These buttons are not connected yet — Alfred will command relays via Raspberry Pi or a home automation bridge in a future version.")
