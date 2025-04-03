@@ -54,19 +54,22 @@ with tab1:
     loc = st.session_state["gps_location"]
 
     # Sunrise/Sunset Calculation
-    city = LocationInfo(name=loc["name"], region="UK", timezone="Europe/London",
-                        latitude=loc["lat"], longitude=loc["lon"])
-    s = sun(city.observer, date=datetime.now().date(), tzinfo=pytz.timezone("Europe/London"))
-    now = datetime.now(pytz.timezone("Europe/London"))
+        try:
+        city = LocationInfo(name=loc["name"], region="UK", timezone="Europe/London",
+                            latitude=loc["lat"], longitude=loc["lon"])
+        s = sun(city.observer, date=datetime.now().date(), tzinfo=pytz.timezone("Europe/London"))
+        now = datetime.now(pytz.timezone("Europe/London"))
 
-    if now < s["sunrise"]:
-        next_event = f"Sunrise: {s['sunrise'].strftime('%H:%M')}"
-    elif now < s["sunset"]:
-        next_event = f"Sunset: {s['sunset'].strftime('%H:%M')}"
-    else:
-        tomorrow = datetime.now().date() + pd.Timedelta(days=1)
-        s_next = sun(city.observer, date=tomorrow, tzinfo=pytz.timezone("Europe/London"))
-        next_event = f"Sunrise: {s_next['sunrise'].strftime('%H:%M')} (tomorrow)"
+        if now < s["sunrise"]:
+            next_event = f"Sunrise: {s['sunrise'].strftime('%H:%M')}"
+        elif now < s["sunset"]:
+            next_event = f"Sunset: {s['sunset'].strftime('%H:%M')}"
+        else:
+            tomorrow = datetime.now().date() + pd.Timedelta(days=1)
+            s_next = sun(city.observer, date=tomorrow, tzinfo=pytz.timezone("Europe/London"))
+            next_event = f"Sunrise: {s_next['sunrise'].strftime('%H:%M')} (tomorrow)"
+    except Exception as e:
+        next_event = "Sunrise/Sunset unavailable"
 
     st.markdown(f"**Current GPS Location:** {loc['name']} | {next_event}")
     st.markdown(f"Lat: `{loc['lat']}`, Lon: `{loc['lon']}`")
@@ -148,8 +151,6 @@ with tab1:
     st.divider()
     st.markdown("##### “It is my pleasure to assist, even if the satnav appears to be more confident than qualified.”")
 
-    st.divider()
-    st.markdown("##### “It is my pleasure to assist, even if the satnav appears to be more confident than qualified.”")
 
 # ---------------- Journey Planner Tab ---------------- #
 with tab2:
