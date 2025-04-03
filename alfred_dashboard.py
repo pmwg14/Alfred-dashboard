@@ -3,6 +3,9 @@ import random
 import pandas as pd
 import pydeck as pdk
 from datetime import datetime
+from astral.sun import sun
+from astral import LocationInfo
+import pytz
 
 # Set up layout
 st.set_page_config(layout="wide", page_title="Alfred Dashboard v2.1", page_icon="⚡")
@@ -49,8 +52,23 @@ with tab1:
 
     init_mock("gps_location", lambda: random.choice(locations))
     loc = st.session_state["gps_location"]
-    st.markdown(f"**Current GPS Location:** {loc['name']}")
-    st.markdown(f"Lat: `{loc['lat']}`, Lon: `{loc['lon']}`")
+# GPS Location with Sunrise/Sunset
+city = LocationInfo(name=loc["name"], region="UK", timezone="Europe/London",
+                    latitude=loc["lat"], longitude=loc["lon"])
+s = sun(city.observer, date=datetime.now().date(), tzinfo=pytz.timezone("Europe/London"))
+now = datetime.now(pytz.timezone("Europe/London"))
+
+if now < s["sunrise"]:
+    next_event = f"Sunrise: {s['sunrise'].strftime('%H:%M')}"
+elif now < s["sunset"]:
+    next_event = f"Sunset: {s['sunset'].strftime('%H:%M')}"
+else:
+    tomorrow = datetime.now().date() + pd.Timedelta(days=1)
+    s_next = sun(city.observer, date=tomorrow, tzinfo=pytz.timezone("Europe/London"))
+    next_event = f"Sunrise: {s_next['sunrise'].strftime('%H:%M')} (tomorrow)"
+
+st.markdown(f"**Current GPS Location:** {loc['name']} | {next_event}")
+st.markdown(f"Lat: `{loc['lat']}`, Lon: `{loc['lon']}`")
 
     st.pydeck_chart(pdk.Deck(
         initial_view_state=pdk.ViewState(latitude=loc["lat"], longitude=loc["lon"], zoom=6),
@@ -154,7 +172,14 @@ with tab2:
 
         st.markdown(f"**Distance:** {distance} miles")
         st.markdown(f"**Estimated Travel Time:** {hours}h {mins}m")
+        # Fuel cost estimate
+mpg = 35
+litres_per_mile = 4.546 / mpg
+fuel_cost = round(litres_per_mile * diesel_price * distance, 2)
+st.markdown(f"**Estimated Fuel Cost:** £{fuel_cost}")
         st.markdown(f"**Alternator Charge Estimate:** {added_kwh} kWh")
+        st.markdown("Estimated fuel cost is based on a Ford Transit Mk8 (35 mpg UK).")
+diesel_price = st.number_input("Diesel Price (£/L)", min_value=1.00, max_value=2.50, value=1.65, step=0.01)
 
         st.markdown(f"**Renogy SOC: {renogy_soc}% → {renogy_after}%**")
         st.markdown(f"**EcoFlow SOC: {ecoflow_soc}% → {ecoflow_after}%**")
