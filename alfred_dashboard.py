@@ -191,11 +191,11 @@ with tab2:
             st.markdown(f"**EcoFlow SOC: {ecoflow_soc}% → {ecoflow_after}%**")
             st.success(f"**Recommended system to charge via alternator:** {recommend}")
 
-            # Mock weather
-            mock_weather = random.choice(["Sunny", "Overcast", "Light Rain", "Windy", "Partly Cloudy"])
-            temp = round(random.uniform(12, 22), 1)
-            wind = random.randint(5, 25)
-            st.markdown(f"**Weather at destination:** {mock_weather}, {temp}°C, Wind {wind} km/h")
+# Mock weather
+mock_weather = random.choice(["Sunny", "Overcast", "Light Rain", "Windy", "Partly Cloudy"])
+temp = round(random.uniform(12, 22), 1)
+wind = random.randint(5, 25)
+st.markdown(f"**Weather at destination:** {mock_weather}, {temp}°C, Wind {wind} km/h")
 
 # Route map using OpenRouteService geometry
 coords = route['features'][0]['geometry']['coordinates']
