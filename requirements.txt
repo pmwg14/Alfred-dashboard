@@ -1,5 +1,5 @@
 streamlit
 pandas
 pydeck
-openroutesource
+openrouteservice
 pytz
