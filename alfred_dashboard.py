@@ -47,28 +47,29 @@ if st.button("🔧 Refresh Mock Data"):
 
 # ---------------- Dashboard Tab ---------------- #
 with tab1:
-    st.title("Alfred Dashboard – v2.1")
+    st.title("Alfred Dashboard – v2.2")
     st.caption(f"{datetime.now().strftime('%A %d %B %Y, %H:%M:%S')}")
 
     init_mock("gps_location", lambda: random.choice(locations))
     loc = st.session_state["gps_location"]
-# GPS Location with Sunrise/Sunset
-city = LocationInfo(name=loc["name"], region="UK", timezone="Europe/London",
-                    latitude=loc["lat"], longitude=loc["lon"])
-s = sun(city.observer, date=datetime.now().date(), tzinfo=pytz.timezone("Europe/London"))
-now = datetime.now(pytz.timezone("Europe/London"))
 
-if now < s["sunrise"]:
-    next_event = f"Sunrise: {s['sunrise'].strftime('%H:%M')}"
-elif now < s["sunset"]:
-    next_event = f"Sunset: {s['sunset'].strftime('%H:%M')}"
-else:
-    tomorrow = datetime.now().date() + pd.Timedelta(days=1)
-    s_next = sun(city.observer, date=tomorrow, tzinfo=pytz.timezone("Europe/London"))
-    next_event = f"Sunrise: {s_next['sunrise'].strftime('%H:%M')} (tomorrow)"
+    # Sunrise/Sunset Calculation
+    city = LocationInfo(name=loc["name"], region="UK", timezone="Europe/London",
+                        latitude=loc["lat"], longitude=loc["lon"])
+    s = sun(city.observer, date=datetime.now().date(), tzinfo=pytz.timezone("Europe/London"))
+    now = datetime.now(pytz.timezone("Europe/London"))
 
-st.markdown(f"**Current GPS Location:** {loc['name']} | {next_event}")
-st.markdown(f"Lat: `{loc['lat']}`, Lon: `{loc['lon']}`")
+    if now < s["sunrise"]:
+        next_event = f"Sunrise: {s['sunrise'].strftime('%H:%M')}"
+    elif now < s["sunset"]:
+        next_event = f"Sunset: {s['sunset'].strftime('%H:%M')}"
+    else:
+        tomorrow = datetime.now().date() + pd.Timedelta(days=1)
+        s_next = sun(city.observer, date=tomorrow, tzinfo=pytz.timezone("Europe/London"))
+        next_event = f"Sunrise: {s_next['sunrise'].strftime('%H:%M')} (tomorrow)"
+
+    st.markdown(f"**Current GPS Location:** {loc['name']} | {next_event}")
+    st.markdown(f"Lat: `{loc['lat']}`, Lon: `{loc['lon']}`")
 
     st.pydeck_chart(pdk.Deck(
         initial_view_state=pdk.ViewState(latitude=loc["lat"], longitude=loc["lon"], zoom=6),
@@ -147,9 +148,15 @@ st.markdown(f"Lat: `{loc['lat']}`, Lon: `{loc['lon']}`")
     st.divider()
     st.markdown("##### “It is my pleasure to assist, even if the satnav appears to be more confident than qualified.”")
 
+    st.divider()
+    st.markdown("##### “It is my pleasure to assist, even if the satnav appears to be more confident than qualified.”")
+
 # ---------------- Journey Planner Tab ---------------- #
 with tab2:
     st.title("Journey Planner")
+
+    st.markdown("Estimated fuel cost is based on a Ford Transit Mk8 (35 mpg UK).")
+    diesel_price = st.number_input("Diesel Price (£/L)", min_value=1.00, max_value=2.50, value=1.65, step=0.01)
 
     from_choice = st.selectbox("Start Location", [loc["name"] for loc in locations])
     to_choice = st.selectbox("Destination", [loc["name"] for loc in locations])
@@ -163,34 +170,34 @@ with tab2:
         added_kwh = estimate_alternator_charge_kwh(travel_mins)
         added_percent = round((added_kwh / 7.2) * 100, 1)
 
+        # Fuel cost
+        mpg = 35
+        litres_per_mile = 4.546 / mpg
+        fuel_cost = round(litres_per_mile * diesel_price * distance, 2)
+
+        # SOC calculations
         renogy_soc = st.session_state['renogy_soc']
         ecoflow_soc = st.session_state['ecoflow_soc']
         renogy_after = min(100, round(renogy_soc + added_percent, 1))
         ecoflow_after = min(100, round(ecoflow_soc + added_percent, 1))
-
         recommend = "Renogy" if renogy_after < ecoflow_after else "EcoFlow Delta Pro"
 
         st.markdown(f"**Distance:** {distance} miles")
         st.markdown(f"**Estimated Travel Time:** {hours}h {mins}m")
-        # Fuel cost estimate
-mpg = 35
-litres_per_mile = 4.546 / mpg
-fuel_cost = round(litres_per_mile * diesel_price * distance, 2)
-st.markdown(f"**Estimated Fuel Cost:** £{fuel_cost}")
+        st.markdown(f"**Estimated Fuel Cost:** £{fuel_cost}")
         st.markdown(f"**Alternator Charge Estimate:** {added_kwh} kWh")
-        st.markdown("Estimated fuel cost is based on a Ford Transit Mk8 (35 mpg UK).")
-diesel_price = st.number_input("Diesel Price (£/L)", min_value=1.00, max_value=2.50, value=1.65, step=0.01)
 
         st.markdown(f"**Renogy SOC: {renogy_soc}% → {renogy_after}%**")
         st.markdown(f"**EcoFlow SOC: {ecoflow_soc}% → {ecoflow_after}%**")
-
         st.success(f"**Recommended system to charge via alternator:** {recommend}")
 
+        # Mock weather
         mock_weather = random.choice(["Sunny", "Overcast", "Light Rain", "Windy", "Partly Cloudy"])
         temp = round(random.uniform(12, 22), 1)
         wind = random.randint(5, 25)
         st.markdown(f"**Weather at destination:** {mock_weather}, {temp}°C, Wind {wind} km/h")
 
+        # Route map
         st.pydeck_chart(pdk.Deck(
             initial_view_state=pdk.ViewState(
                 latitude=(from_loc["lat"] + to_loc["lat"]) / 2,
