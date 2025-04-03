@@ -29,20 +29,20 @@ def get_location(name):
 def estimate_distance_miles(from_loc, to_loc):
     lat1, lon1 = from_loc["lat"], from_loc["lon"]
     lat2, lon2 = to_loc["lat"], to_loc["lon"]
-    return round(((lat1 - lat2)**2 + (lon1 - lon2)**2)**0.5 * 69, 1)  # 69 miles ≈ 1 degree
+    return round(((lat1 - lat2)**2 + (lon1 - lon2)**2)**0.5 * 69, 1)
 
 def estimate_travel_time_mins(distance_miles):
-    return round(distance_miles / 40 * 60)  # assume 40 mph average speed
+    return round(distance_miles / 40 * 60)
 
 def estimate_alternator_charge_kwh(travel_minutes):
-    return round((travel_minutes / 60) * 0.5, 2)  # 0.5kWh per hour driving
+    return round((travel_minutes / 60) * 0.5, 2)
 
 # Refresh button
 if st.button("🔧 Refresh Mock Data"):
     st.session_state.clear()
     st.rerun()
-    
-    # ---------------- Dashboard Tab ---------------- #
+
+# ---------------- Dashboard Tab ---------------- #
 with tab1:
     st.title("Alfred Dashboard – v2.1")
     st.caption(f"{datetime.now().strftime('%A %d %B %Y, %H:%M:%S')}")
@@ -62,7 +62,7 @@ with tab1:
 
     st.divider()
 
-    # Power system mocks
+    # Power system
     init_mock("renogy_voltage", lambda: round(random.uniform(12.4, 13.2), 2))
     init_mock("renogy_soc", lambda: random.randint(70, 100))
     init_mock("solar_input", lambda: random.randint(0, 360))
@@ -83,8 +83,8 @@ with tab1:
         st.metric("Battery SOC", f"{st.session_state['ecoflow_soc']}%")
         st.metric("AC Output", f"{st.session_state['ecoflow_output']}W")
         st.metric("Input Power", f"{st.session_state['ecoflow_input']}W")
-        
-            st.divider()
+
+    st.divider()
 
     # Connectivity
     init_mock("starlink_download", lambda: random.randint(80, 120))
@@ -128,8 +128,8 @@ with tab1:
 
     st.divider()
     st.markdown("##### “It is my pleasure to assist, even if the satnav appears to be more confident than qualified.”")
-    
-    # ---------------- Journey Planner Tab ---------------- #
+
+# ---------------- Journey Planner Tab ---------------- #
 with tab2:
     st.title("Journey Planner")
 
@@ -161,14 +161,11 @@ with tab2:
 
         st.success(f"**Recommended system to charge via alternator:** {recommend}")
 
-        # Mock Weather
         mock_weather = random.choice(["Sunny", "Overcast", "Light Rain", "Windy", "Partly Cloudy"])
         temp = round(random.uniform(12, 22), 1)
         wind = random.randint(5, 25)
-
         st.markdown(f"**Weather at destination:** {mock_weather}, {temp}°C, Wind {wind} km/h")
 
-        # Route Map
         st.pydeck_chart(pdk.Deck(
             initial_view_state=pdk.ViewState(
                 latitude=(from_loc["lat"] + to_loc["lat"]) / 2,
