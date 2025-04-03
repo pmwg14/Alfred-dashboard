@@ -3,9 +3,6 @@ import random
 import pandas as pd
 import pydeck as pdk
 from datetime import datetime
-from astral.sun import sun
-from astral import LocationInfo
-import pytz
 
 # Set up layout
 st.set_page_config(layout="wide", page_title="Alfred Dashboard v2.1", page_icon="⚡")
@@ -53,25 +50,8 @@ with tab1:
     init_mock("gps_location", lambda: random.choice(locations))
     loc = st.session_state["gps_location"]
 
-    # Sunrise/Sunset Calculation
-    try:
-        city = LocationInfo(
-            name=loc["name"], region="UK", timezone="Europe/London",
-            latitude=loc["lat"], longitude=loc["lon"]
-        )
-        s = sun(city.observer, date=datetime.now().date(), tzinfo=pytz.timezone("Europe/London"))
-        now = datetime.now(pytz.timezone("Europe/London"))
-
-        if now < s["sunrise"]:
-            next_event = f"Sunrise: {s['sunrise'].strftime('%H:%M')}"
-        elif now < s["sunset"]:
-            next_event = f"Sunset: {s['sunset'].strftime('%H:%M')}"
-        else:
-            tomorrow = datetime.now().date() + pd.Timedelta(days=1)
-            s_next = sun(city.observer, date=tomorrow, tzinfo=pytz.timezone("Europe/London"))
-            next_event = f"Sunrise: {s_next['sunrise'].strftime('%H:%M')} (tomorrow)"
-    except:
-        next_event = "Sunrise/Sunset unavailable"
+    # Sunrise/Sunset placeholder for June 18
+    next_event = "Sunrise: 04:39 | Sunset: 21:23 (18 June)"
 
     st.markdown(f"**Current GPS Location:** {loc['name']} | {next_event}")
     st.markdown(f"Lat: `{loc['lat']}`, Lon: `{loc['lon']}`")
