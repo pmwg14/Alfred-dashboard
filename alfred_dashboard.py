@@ -133,6 +133,7 @@ with tab1:
     st.divider()
     st.markdown("##### “It is my pleasure to assist, even if the satnav appears to be more confident than qualified.”")
 
+import openrouteservice
 
 # ---------------- Journey Planner Tab ---------------- #
 with tab2:
@@ -147,56 +148,75 @@ with tab2:
     if from_choice != to_choice:
         from_loc = get_location(from_choice)
         to_loc = get_location(to_choice)
-        distance = estimate_distance_miles(from_loc, to_loc)
-        travel_mins = estimate_travel_time_mins(distance)
-        hours, mins = divmod(travel_mins, 60)
-        added_kwh = estimate_alternator_charge_kwh(travel_mins)
-        added_percent = round((added_kwh / 7.2) * 100, 1)
 
-        # Fuel cost
-        mpg = 35
-        litres_per_mile = 4.546 / mpg
-        fuel_cost = round(litres_per_mile * diesel_price * distance, 2)
+        # OpenRouteService client
+        ors_client = openrouteservice.Client(key="5b3ce3597851110001cf6248faab8eb43c574edea6693d9d1d5b05ef")
 
-        # SOC calculations
-        renogy_soc = st.session_state['renogy_soc']
-        ecoflow_soc = st.session_state['ecoflow_soc']
-        renogy_after = min(100, round(renogy_soc + added_percent, 1))
-        ecoflow_after = min(100, round(ecoflow_soc + added_percent, 1))
-        recommend = "Renogy" if renogy_after < ecoflow_after else "EcoFlow Delta Pro"
+        # Get route data
+        try:
+            route = ors_client.directions(
+                coordinates=[[from_loc["lon"], from_loc["lat"]], [to_loc["lon"], to_loc["lat"]]],
+                profile='driving-car',
+                format='geojson'
+            )
 
-        st.markdown(f"**Distance:** {distance} miles")
-        st.markdown(f"**Estimated Travel Time:** {hours}h {mins}m")
-        st.markdown(f"**Estimated Fuel Cost:** £{fuel_cost}")
-        st.markdown(f"**Alternator Charge Estimate:** {added_kwh} kWh")
+            summary = route['features'][0]['properties']['summary']
+            distance_km = summary['distance'] / 1000
+            distance_miles = round(distance_km * 0.621371, 1)
+            duration_min = round(summary['duration'] / 60)
+            hours, mins = divmod(duration_min, 60)
 
-        st.markdown(f"**Renogy SOC: {renogy_soc}% → {renogy_after}%**")
-        st.markdown(f"**EcoFlow SOC: {ecoflow_soc}% → {ecoflow_after}%**")
-        st.success(f"**Recommended system to charge via alternator:** {recommend}")
+            # Fuel cost
+            mpg = 35
+            litres_per_mile = 4.546 / mpg
+            fuel_cost = round(litres_per_mile * diesel_price * distance_miles, 2)
 
-        # Mock weather
-        mock_weather = random.choice(["Sunny", "Overcast", "Light Rain", "Windy", "Partly Cloudy"])
-        temp = round(random.uniform(12, 22), 1)
-        wind = random.randint(5, 25)
-        st.markdown(f"**Weather at destination:** {mock_weather}, {temp}°C, Wind {wind} km/h")
+            # Alternator charging estimates
+            added_kwh = estimate_alternator_charge_kwh(duration_min)
+            added_percent = round((added_kwh / 7.2) * 100, 1)
 
-        # Route map
-        st.pydeck_chart(pdk.Deck(
-            initial_view_state=pdk.ViewState(
-                latitude=(from_loc["lat"] + to_loc["lat"]) / 2,
-                longitude=(from_loc["lon"] + to_loc["lon"]) / 2,
-                zoom=5.5,
-            ),
-            layers=[
-                pdk.Layer("LineLayer", data=pd.DataFrame([{
-                    "from": [from_loc["lon"], from_loc["lat"]],
-                    "to": [to_loc["lon"], to_loc["lat"]],
-                }]), get_source_position="from", get_target_position="to",
-                    get_width=4, get_color=[0, 100, 255], pickable=True),
-                pdk.Layer("ScatterplotLayer", data=[from_loc, to_loc],
-                          get_position='[lon, lat]', get_color='[255, 0, 0, 160]', get_radius=8000),
-            ],
-        ))
+            # SOC estimates
+            renogy_soc = st.session_state['renogy_soc']
+            ecoflow_soc = st.session_state['ecoflow_soc']
+            renogy_after = min(100, round(renogy_soc + added_percent, 1))
+            ecoflow_after = min(100, round(ecoflow_soc + added_percent, 1))
+            recommend = "Renogy" if renogy_after < ecoflow_after else "EcoFlow Delta Pro"
+
+            st.markdown(f"**Distance:** {distance_miles} miles")
+            st.markdown(f"**Estimated Travel Time:** {hours}h {mins}m")
+            st.markdown(f"**Estimated Fuel Cost:** £{fuel_cost}")
+            st.markdown(f"**Alternator Charge Estimate:** {added_kwh} kWh")
+
+            st.markdown(f"**Renogy SOC: {renogy_soc}% → {renogy_after}%**")
+            st.markdown(f"**EcoFlow SOC: {ecoflow_soc}% → {ecoflow_after}%**")
+            st.success(f"**Recommended system to charge via alternator:** {recommend}")
+
+            # Mock weather
+            mock_weather = random.choice(["Sunny", "Overcast", "Light Rain", "Windy", "Partly Cloudy"])
+            temp = round(random.uniform(12, 22), 1)
+            wind = random.randint(5, 25)
+            st.markdown(f"**Weather at destination:** {mock_weather}, {temp}°C, Wind {wind} km/h")
+
+            # Route map with actual polyline
+            coords = route['features'][0]['geometry']['coordinates']
+            route_df = pd.DataFrame(coords, columns=["lon", "lat"])
+
+            st.pydeck_chart(pdk.Deck(
+                initial_view_state=pdk.ViewState(
+                    latitude=sum(route_df["lat"]) / len(route_df),
+                    longitude=sum(route_df["lon"]) / len(route_df),
+                    zoom=6,
+                ),
+                layers=[
+                    pdk.Layer("PathLayer", data=route_df, get_path="[[lon, lat]]",
+                              get_width=4, get_color=[0, 100, 255], width_min_pixels=2),
+                    pdk.Layer("ScatterplotLayer", data=[from_loc, to_loc],
+                              get_position='[lon, lat]', get_color='[255, 0, 0, 160]', get_radius=8000),
+                ],
+            ))
+
+        except Exception as e:
+            st.error("Route calculation failed. Please check your API key or try a different location.")
 
     else:
         st.info("Select two different locations to plan a journey.")
