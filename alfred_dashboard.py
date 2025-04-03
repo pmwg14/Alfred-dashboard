@@ -3,6 +3,7 @@ import random
 import pandas as pd
 import pydeck as pdk
 from datetime import datetime
+import openroutesource
 
 # Set up layout
 st.set_page_config(layout="wide", page_title="Alfred Dashboard v2.1", page_icon="⚡")
@@ -135,6 +136,8 @@ with tab1:
 
 import openrouteservice
 
+import openrouteservice
+
 # ---------------- Journey Planner Tab ---------------- #
 with tab2:
     st.title("Journey Planner")
@@ -191,41 +194,41 @@ with tab2:
             st.markdown(f"**EcoFlow SOC: {ecoflow_soc}% → {ecoflow_after}%**")
             st.success(f"**Recommended system to charge via alternator:** {recommend}")
 
-# Mock weather
-mock_weather = random.choice(["Sunny", "Overcast", "Light Rain", "Windy", "Partly Cloudy"])
-temp = round(random.uniform(12, 22), 1)
-wind = random.randint(5, 25)
-st.markdown(f"**Weather at destination:** {mock_weather}, {temp}°C, Wind {wind} km/h")
+            # Mock weather
+            mock_weather = random.choice(["Sunny", "Overcast", "Light Rain", "Windy", "Partly Cloudy"])
+            temp = round(random.uniform(12, 22), 1)
+            wind = random.randint(5, 25)
+            st.markdown(f"**Weather at destination:** {mock_weather}, {temp}°C, Wind {wind} km/h")
 
-# Route map using OpenRouteService geometry
-coords = route['features'][0]['geometry']['coordinates']
-route_path = [{"path": coords}]
-route_df = pd.DataFrame(route_path)
+            # Route map using OpenRouteService geometry
+            coords = route['features'][0]['geometry']['coordinates']
+            route_path = [{"path": coords}]
+            route_df = pd.DataFrame(route_path)
 
-st.pydeck_chart(pdk.Deck(
-    initial_view_state=pdk.ViewState(
-        latitude=(from_loc["lat"] + to_loc["lat"]) / 2,
-        longitude=(from_loc["lon"] + to_loc["lon"]) / 2,
-        zoom=6,
-    ),
-    layers=[
-        pdk.Layer(
-            "PathLayer",
-            data=route_df,
-            get_path="path",
-            get_width=4,
-            get_color=[0, 100, 255],
-            width_min_pixels=2
-        ),
-        pdk.Layer(
-            "ScatterplotLayer",
-            data=[from_loc, to_loc],
-            get_position='[lon, lat]',
-            get_color='[255, 0, 0, 160]',
-            get_radius=8000
-        ),
-    ],
-))
+            st.pydeck_chart(pdk.Deck(
+                initial_view_state=pdk.ViewState(
+                    latitude=(from_loc["lat"] + to_loc["lat"]) / 2,
+                    longitude=(from_loc["lon"] + to_loc["lon"]) / 2,
+                    zoom=6,
+                ),
+                layers=[
+                    pdk.Layer(
+                        "PathLayer",
+                        data=route_df,
+                        get_path="path",
+                        get_width=4,
+                        get_color=[0, 100, 255],
+                        width_min_pixels=2
+                    ),
+                    pdk.Layer(
+                        "ScatterplotLayer",
+                        data=[from_loc, to_loc],
+                        get_position='[lon, lat]',
+                        get_color='[255, 0, 0, 160]',
+                        get_radius=8000
+                    ),
+                ],
+            ))
 
         except Exception as e:
             st.error("Route calculation failed. Please check your API key or try a different location.")
