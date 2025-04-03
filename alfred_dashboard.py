@@ -1,14 +1,16 @@
 import streamlit as st
 import random
 import pandas as pd
+import pydeck as pdk
 from datetime import datetime
 
-st.set_page_config(layout="wide", page_title="Alfred Dashboard v2", page_icon="⚡")
+# Set up layout
+st.set_page_config(layout="wide", page_title="Alfred Dashboard v2.1", page_icon="⚡")
 
-# --- Page Tabs ---
+# Tabs
 tab1, tab2 = st.tabs(["Dashboard", "Journey Planner"])
 
-# --- Shared Helpers ---
+# Shared functions
 def init_mock(key, generator):
     if key not in st.session_state:
         st.session_state[key] = generator()
@@ -24,70 +26,74 @@ locations = [
 def get_location(name):
     return next(loc for loc in locations if loc["name"] == name)
 
-def estimate_distance_km(from_loc, to_loc):
-    # rough approximation using haversine-like calc
+def estimate_distance_miles(from_loc, to_loc):
     lat1, lon1 = from_loc["lat"], from_loc["lon"]
     lat2, lon2 = to_loc["lat"], to_loc["lon"]
-    return round(((lat1 - lat2)**2 + (lon1 - lon2)**2)**0.5 * 111, 1)  # 111km ≈ 1 degree
+    return round(((lat1 - lat2)**2 + (lon1 - lon2)**2)**0.5 * 69, 1)  # 69 miles ≈ 1 degree
 
-def estimate_travel_time_km(distance_km):
-    return round(distance_km / 65 * 60)  # assume 65km/h average speed
+def estimate_travel_time_mins(distance_miles):
+    return round(distance_miles / 40 * 60)  # assume 40 mph average speed
 
 def estimate_alternator_charge_kwh(travel_minutes):
     return round((travel_minutes / 60) * 0.5, 2)  # 0.5kWh per hour driving
 
-# --- Refresh Mock Button ---
-if st.button("🔄 Refresh Mock Data"):
+# Refresh button
+if st.button("🔧 Refresh Mock Data"):
     st.session_state.clear()
     st.rerun()
-
-# ========== TAB 1: DASHBOARD ==========
+    
+    # ---------------- Dashboard Tab ---------------- #
 with tab1:
-    st.title("Alfred Dashboard – v2.0")
+    st.title("Alfred Dashboard – v2.1")
     st.caption(f"{datetime.now().strftime('%A %d %B %Y, %H:%M:%S')}")
 
-    # --- GPS Mock Location ---
     init_mock("gps_location", lambda: random.choice(locations))
     loc = st.session_state["gps_location"]
     st.markdown(f"**Current GPS Location:** {loc['name']}")
     st.markdown(f"Lat: `{loc['lat']}`, Lon: `{loc['lon']}`")
-    st.map(pd.DataFrame([{"lat": loc['lat'], "lon": loc['lon']}]), zoom=10)
+
+    st.pydeck_chart(pdk.Deck(
+        initial_view_state=pdk.ViewState(latitude=loc["lat"], longitude=loc["lon"], zoom=6),
+        layers=[
+            pdk.Layer("ScatterplotLayer", data=[loc], get_position='[lon, lat]',
+                      get_color='[200, 30, 0, 160]', get_radius=10000)
+        ],
+    ))
+
     st.divider()
 
-    # --- Power System Data ---
+    # Power system mocks
     init_mock("renogy_voltage", lambda: round(random.uniform(12.4, 13.2), 2))
     init_mock("renogy_soc", lambda: random.randint(70, 100))
     init_mock("solar_input", lambda: random.randint(0, 360))
     init_mock("dc_load", lambda: random.randint(30, 80))
-    init_mock("ecoflow_soc", lambda: random.randint(50, 90))
+    init_mock("ecoflow_soc", lambda: random.randint(40, 80))
     init_mock("ecoflow_output", lambda: random.randint(100, 600))
     init_mock("ecoflow_input", lambda: random.randint(0, 240))
 
     col1, col2 = st.columns(2)
-
     with col1:
         st.subheader("Renogy 12V System")
         st.metric("Battery Voltage", f"{st.session_state['renogy_voltage']}V")
         st.metric("Battery SOC", f"{st.session_state['renogy_soc']}%")
         st.metric("Solar Input", f"{st.session_state['solar_input']}W")
         st.metric("DC Load", f"{st.session_state['dc_load']}W")
-
     with col2:
         st.subheader("EcoFlow Delta Pro")
         st.metric("Battery SOC", f"{st.session_state['ecoflow_soc']}%")
         st.metric("AC Output", f"{st.session_state['ecoflow_output']}W")
         st.metric("Input Power", f"{st.session_state['ecoflow_input']}W")
+        
+            st.divider()
 
-    st.divider()
-
-    # --- Starlink Connectivity ---
+    # Connectivity
     init_mock("starlink_download", lambda: random.randint(80, 120))
     init_mock("starlink_upload", lambda: random.randint(10, 20))
     init_mock("wifi_devices", lambda: random.randint(4, 10))
+    init_mock("starlink_history", lambda: pd.DataFrame(columns=["🛜 Download", "Upload"]))
 
-    init_mock("starlink_history", lambda: pd.DataFrame(columns=["Download", "Upload"]))
     new_row = pd.DataFrame({
-        "Download": [st.session_state['starlink_download']],
+        "🛜 Download": [st.session_state['starlink_download']],
         "Upload": [st.session_state['starlink_upload']]
     })
     st.session_state['starlink_history'] = pd.concat([
@@ -98,68 +104,32 @@ with tab1:
     col3, col4 = st.columns(2)
     with col3:
         st.metric("Starlink Status", "Online")
-        st.metric("Download Speed", f"{st.session_state['starlink_download']} Mbps")
+        st.metric("🛜 Download Speed", f"{st.session_state['starlink_download']} Mbps")
         st.metric("Upload Speed", f"{st.session_state['starlink_upload']} Mbps")
         st.line_chart(st.session_state['starlink_history'], height=150, use_container_width=True)
-
     with col4:
         st.metric("Devices on WiFi", st.session_state['wifi_devices'])
 
     st.divider()
 
-    # --- Environmental Sensors ---
+    # Environment
     init_mock("interior_temp", lambda: round(random.uniform(18.5, 23.0), 1))
     init_mock("humidity", lambda: random.randint(35, 60))
     init_mock("water_level", lambda: random.randint(40, 80))
 
     st.subheader("Environmental Monitoring")
     col5, col6, col7 = st.columns(3)
-
     with col5:
-        st.metric("Interior Temp", f"{st.session_state['interior_temp']}°C")
-
+        st.metric("🌡️ Interior Temp", f"{st.session_state['interior_temp']}°C")
     with col6:
-        st.metric("Humidity", f"{st.session_state['humidity']}%")
-
+        st.metric("💦 Humidity", f"{st.session_state['humidity']}%")
     with col7:
         st.metric("Water Tank Level", f"{st.session_state['water_level']}%")
 
     st.divider()
-
-    # --- Device Controls ---
-    st.subheader("Lighting & Device Control")
-    lighting_cols = st.columns(3)
-    with lighting_cols[0]:
-        st.button("Kitchen Lights")
-    with lighting_cols[1]:
-        st.button("Ceiling Lights")
-    with lighting_cols[2]:
-        st.button("Bedside Scene")
-
-    device_cols = st.columns(4)
-    with device_cols[0]:
-        st.button("Fridge Power")
-    with device_cols[1]:
-        st.button("Roof Fan")
-    with device_cols[2]:
-        st.button("Inverter")
-    with device_cols[3]:
-        st.button("Induction Hob")
-
-    st.divider()
-    st.subheader("Scenes")
-    scene_cols = st.columns(3)
-    with scene_cols[0]:
-        st.button("Night Mode")
-    with scene_cols[1]:
-        st.button("Travel Mode")
-    with scene_cols[2]:
-        st.button("Stealth Mode")
-
-    st.divider()
     st.markdown("##### “It is my pleasure to assist, even if the satnav appears to be more confident than qualified.”")
-
-# ========== TAB 2: JOURNEY PLANNER ==========
+    
+    # ---------------- Journey Planner Tab ---------------- #
 with tab2:
     st.title("Journey Planner")
 
@@ -169,17 +139,52 @@ with tab2:
     if from_choice != to_choice:
         from_loc = get_location(from_choice)
         to_loc = get_location(to_choice)
-        distance_km = estimate_distance_km(from_loc, to_loc)
-        travel_time_min = estimate_travel_time_km(distance_km)
-        charge_estimate = estimate_alternator_charge_kwh(travel_time_min)
+        distance = estimate_distance_miles(from_loc, to_loc)
+        travel_mins = estimate_travel_time_mins(distance)
+        hours, mins = divmod(travel_mins, 60)
+        added_kwh = estimate_alternator_charge_kwh(travel_mins)
+        added_percent = round((added_kwh / 7.2) * 100, 1)
 
-        st.markdown(f"**Distance:** {distance_km} km")
-        st.markdown(f"**Estimated Travel Time:** {travel_time_min} minutes")
-        st.markdown(f"**Estimated Alternator Charge:** {charge_estimate} kWh (via 40A DC-DC)")
+        renogy_soc = st.session_state['renogy_soc']
+        ecoflow_soc = st.session_state['ecoflow_soc']
+        renogy_after = min(100, round(renogy_soc + added_percent, 1))
+        ecoflow_after = min(100, round(ecoflow_soc + added_percent, 1))
 
-        st.map(pd.DataFrame([
-            {"lat": from_loc["lat"], "lon": from_loc["lon"]},
-            {"lat": to_loc["lat"], "lon": to_loc["lon"]}
-        ]), zoom=5)
+        recommend = "Renogy" if renogy_after < ecoflow_after else "EcoFlow Delta Pro"
+
+        st.markdown(f"**Distance:** {distance} miles")
+        st.markdown(f"**Estimated Travel Time:** {hours}h {mins}m")
+        st.markdown(f"**Alternator Charge Estimate:** {added_kwh} kWh")
+
+        st.markdown(f"**Renogy SOC: {renogy_soc}% → {renogy_after}%**")
+        st.markdown(f"**EcoFlow SOC: {ecoflow_soc}% → {ecoflow_after}%**")
+
+        st.success(f"**Recommended system to charge via alternator:** {recommend}")
+
+        # Mock Weather
+        mock_weather = random.choice(["Sunny", "Overcast", "Light Rain", "Windy", "Partly Cloudy"])
+        temp = round(random.uniform(12, 22), 1)
+        wind = random.randint(5, 25)
+
+        st.markdown(f"**Weather at destination:** {mock_weather}, {temp}°C, Wind {wind} km/h")
+
+        # Route Map
+        st.pydeck_chart(pdk.Deck(
+            initial_view_state=pdk.ViewState(
+                latitude=(from_loc["lat"] + to_loc["lat"]) / 2,
+                longitude=(from_loc["lon"] + to_loc["lon"]) / 2,
+                zoom=5.5,
+            ),
+            layers=[
+                pdk.Layer("LineLayer", data=pd.DataFrame([{
+                    "from": [from_loc["lon"], from_loc["lat"]],
+                    "to": [to_loc["lon"], to_loc["lat"]],
+                }]), get_source_position="from", get_target_position="to",
+                    get_width=4, get_color=[0, 100, 255], pickable=True),
+                pdk.Layer("ScatterplotLayer", data=[from_loc, to_loc],
+                          get_position='[lon, lat]', get_color='[255, 0, 0, 160]', get_radius=8000),
+            ],
+        ))
+
     else:
         st.info("Select two different locations to plan a journey.")
