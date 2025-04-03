@@ -5,6 +5,9 @@ import pydeck as pdk
 from datetime import datetime
 import openrouteservice
 
+        # OpenRouteService client
+        ors_client = openrouteservice.Client(key="5b3ce3597851110001cf6248faab8eb43c574edea6693d9d1d5b05ef")
+
 # Set up layout
 st.set_page_config(layout="wide", page_title="Alfred Dashboard v2.1", page_icon="⚡")
 
@@ -231,7 +234,7 @@ with tab2:
             ))
 
         except Exception as e:
-            st.error("Route calculation failed. Please check your API key or try a different location.")
+            st.error("Route calculation failed. Error: {e}")
 
     else:
         st.info("Select two different locations to plan a journey.")
