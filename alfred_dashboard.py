@@ -54,17 +54,17 @@ with tab1:
     loc = st.session_state["gps_location"]
 
     # Sunrise/Sunset Calculation
-        try:
+    try:
         city = LocationInfo(name=loc["name"], region="UK", timezone="Europe/London",
                             latitude=loc["lat"], longitude=loc["lon"])
         s = sun(city.observer, date=datetime.now().date(), tzinfo=pytz.timezone("Europe/London"))
         now = datetime.now(pytz.timezone("Europe/London"))
 
-        if now < s["sunrise"]:
+    if now < s["sunrise"]:
             next_event = f"Sunrise: {s['sunrise'].strftime('%H:%M')}"
-        elif now < s["sunset"]:
+    elif now < s["sunset"]:
             next_event = f"Sunset: {s['sunset'].strftime('%H:%M')}"
-        else:
+    else:
             tomorrow = datetime.now().date() + pd.Timedelta(days=1)
             s_next = sun(city.observer, date=tomorrow, tzinfo=pytz.timezone("Europe/London"))
             next_event = f"Sunrise: {s_next['sunrise'].strftime('%H:%M')} (tomorrow)"
